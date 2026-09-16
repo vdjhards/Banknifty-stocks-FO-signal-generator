@@ -1,9 +1,8 @@
 # BANKNIFTY TimesFM Signal Bot
 
 An automated paper-trading research bot for the BANKNIFTY index. It downloads
-5-minute BANKNIFTY reference data, confirms a breakout with technical
-indicators, uses Google TimesFM to estimate the next 15-minute direction, and
-sends qualifying signals to Telegram.
+5-minute BANKNIFTY reference data, applies a 15-minute opening-range
+inside-bar breakout rule, and sends qualifying signals to Telegram.
 
 > **Research only.** This project does not place orders and does not guarantee
 > profits. Signals use the BANKNIFTY index as a reference, not live option
@@ -15,7 +14,7 @@ sends qualifying signals to Telegram.
 
 The bot runs about every five minutes on weekdays during Indian market hours.
 Each run evaluates only completed candles and sends a signal only when the
-forecast, breakout, trend, momentum, volume, and score conditions agree.
+opening-range and breakout conditions agree.
 
 ### Step by step
 
@@ -23,40 +22,17 @@ forecast, breakout, trend, momentum, volume, and score conditions agree.
 	 `^NSEBANK`.
 2. **Ignore the forming candle** — timestamps are converted to `Asia/Kolkata`,
 	 and the current incomplete five-minute candle is excluded.
-3. **Calculate indicators** — EMA20, EMA50, session VWAP, 14-period RSI,
-	 14-period ATR, 20-period volume ratio, and previous 12-candle
-	 resistance/support.
-4. **Build 15-minute candles** — completed 5-minute data is resampled into
-	 right-labeled, right-closed 15-minute candles.
-5. **Forecast direction** — TimesFM forecasts the next four 15-minute points.
-	 The final forecast is BULLISH above +0.1%, BEARISH below -0.1%, and
-	 NEUTRAL otherwise.
-6. **Confirm the breakout**:
-	 - Close above previous resistance + BULLISH forecast = bullish setup.
-	 - Close below previous support + BEARISH forecast = bearish setup.
-7. **Apply confirmation checks** — volume, EMA alignment, VWAP position, and
-	 RSI alignment contribute to the score. The minimum accepted score is
-	 **75/100**.
-8. **Calculate paper-trade levels**:
-	 - **BUY CALL** — entry at close, stop at `entry - 1.2 x ATR`, targets at
-		 `entry + 1.8 x ATR` and `entry + 2.8 x ATR`.
-	 - **BUY PUT** — entry at close, stop at `entry + 1.2 x ATR`, targets at
-		 `entry - 1.8 x ATR` and `entry - 2.8 x ATR`.
-9. **Suppress duplicates** — a candle and action combination is recorded in
+3. **Find a coil** — candles 09:30 through 10:15 must remain fully inside the
+	 09:15 candle range.
+4. **Confirm the breakout** — the first 10:30–13:00 candle that closes beyond
+	 the 09:15 range creates a signal. Entry is the next candle's open.
+5. **Calculate paper-trade levels** — the target is 1%; the stop is the
+	 opposite extreme of the 09:15 candle.
+6. **Suppress duplicates** — a session and breakout combination is recorded in
 	 `data/trade_journal.json`; the same signal is not sent twice.
 
-### Score components
-
-| Factor | Points | What it checks |
-|---|---:|---|
-| Base breakout setup | 55 | Forecast agrees with a support/resistance break |
-| Volume | 10 | Volume ratio is at least 1.2 |
-| EMA alignment | 10 | Close is correctly positioned around EMA20 and EMA50 |
-| VWAP alignment | 10 | Close is on the forecast side of VWAP |
-| RSI alignment | 5 | RSI is in the direction-specific confirmation range |
-
-The score is a strategy-strength score, not a probability or proven win-rate
-estimate.
+There is no confidence score. This is a paper-trading research strategy, not a
+proven edge.
 
 ---
 

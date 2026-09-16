@@ -1,9 +1,7 @@
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
 import yfinance as yf
-from .config import SYMBOL, MARKET_TZ, MIN_SCORE
-from .indicators import add_indicators
-from .timesfm_forecaster import forecast_direction
+from .config import SYMBOL, MARKET_TZ
 from .strategy import build_signal
 from .journal import add
 from .telegram import send
@@ -22,13 +20,11 @@ def main():
     if hasattr(raw.columns,'levels'): raw.columns=raw.columns.get_level_values(0)
     df5=completed(raw,5)
     if len(df5)<80: return
-    df5=add_indicators(df5)
-    df15=df5.resample('15min',label='right',closed='right').agg({'Open':'first','High':'max','Low':'min','Close':'last','Volume':'sum'}).dropna()
-    if len(df15)<100: return
-    direction, future, pct=forecast_direction(df15['Close'].tail(1024).values)
-    sig=build_signal(df5,direction)
+    df15=df5.resample('15min',label='left',closed='left').agg({'Open':'first','High':'max','Low':'min','Close':'last','Volume':'sum'}).dropna()
+    df15=completed(df15,15)
+    sig=build_signal(df15)
     if not sig: return
-    candle=df5.index[-1].isoformat()
+    candle=f'{df15.index[-1].date().isoformat()}|{sig.reason}'
     if add(sig,candle):
-        send(f"🚨 BANKNIFTY SIGNAL\n\nAction: {sig.action}\nScore: {sig.score}/100\n\nBANKNIFTY: {sig.entry:.2f}\nEntry: {sig.entry:.2f}\nStop Loss: {sig.stop:.2f}\nTarget 1: {sig.target1:.2f}\nTarget 2: {sig.target2:.2f}\n\n15M TimesFM: {direction}\n5M Breakout: CONFIRMED\n\nReason: {sig.reason}\n\n⚠️ PAPER TRADE — score is strategy strength, not win probability.")
+        send(f"🚨 BANKNIFTY SIGNAL\n\nAction: {sig.action}\n\nEntry: {sig.entry:.2f}\nStop Loss: {sig.stop:.2f}\nTarget: {sig.target1:.2f}\n\nReason: {sig.reason}\n\n⚠️ PAPER TRADE — 15M inside-bar lab strategy.")
 if __name__=='__main__': main()
