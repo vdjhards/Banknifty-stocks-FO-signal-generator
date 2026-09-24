@@ -1,9 +1,0 @@
-pandas>=2.2
-numpy>=1.26
-requests>=2.32
-python-dotenv>=1.0
-yfinance>=0.2.40
-torch>=2.2
-huggingface_hub>=0.24
-safetensors>=0.4
-git+https://github.com/google-research/timesfm.git
